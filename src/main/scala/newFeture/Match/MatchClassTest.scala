@@ -2,13 +2,18 @@ package newFeture.Match
 
 
 /**
- * Created by wangke on 15-12-28.
+ * 模式匹配的深度使用
  */
 object MatchClassTest {
 
 
   def main(args: Array[String]) {
 
+    //首先Array调用Array的伴生对象apply方法,构造一个数组
+    //然后将数据传递给Array(a,b),这时会调用unapply方法将a,b赋值给a,b
+    //不能在匹配中加入大写开头的变量,编译器默认为常量
+
+    val Array(a,b)= Array("a","b","c")
 
     val teacher = new Teacher("wangke1")
     val student = new Student("wangke2")
@@ -16,6 +21,8 @@ object MatchClassTest {
 
     //会调用Array的apply方法构造Array,如果
     val people = Array(student, teacher, student2)
+
+
     for (p <- people) {
       p match {
         case Student() => println("got a student")
