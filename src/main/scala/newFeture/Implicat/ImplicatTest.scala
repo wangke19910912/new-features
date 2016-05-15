@@ -1,7 +1,11 @@
 package newFeture.Implicat
 
+import scala.math.Ordering.Implicits
+
 /**
  * 展示如何使用隐式转换
+ * 特别的在scala的源代码中可以使用隐式转换成scala的类
+ * 但是java不能动态转换成scala类
  */
 
 object ImplicatTest {
@@ -16,9 +20,13 @@ object ImplicatTest {
     //方式2:在当前类中添加隐式转换方法
     //    implicit def A2B(a: classA) = new classB
     val a = new classA
-    //当调用a的funcB方法时候,因为没有找到,所以会寻找当前作用域是否存在隐式转换,从伴生对象开始寻找
     a.funcA
     a.funcB
+
+    List   a = new List("faf");
+
+    val bigOne = a.bigger(3, 4)
+    println("big one is " + bigOne)
   }
 
 }
@@ -29,6 +37,16 @@ class classA {
 
     println("call function A")
   }
+
+  //隐式参数转换
+  def bigger[T](a: T, b: T)(implicit ordered: T => Ordered[T]) = {
+
+    if (ordered(a) > b) a else b
+
+  }
+
+  //上下文界定
+
 
 }
 

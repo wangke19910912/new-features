@@ -1,8 +1,9 @@
 package newFeture.Implicat
 
 /**
- * Created by wangke on 15-12-29.
+ * 代表ClassA的增强类,可以继承自ClassB
  */
+
 object classB {
   implicit def A2B(a: classA) = new classB
 }

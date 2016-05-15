@@ -10,12 +10,9 @@ import java.nio.channels.SocketChannel;
 import java.util.Set;
 
 /*
- * 服务端在创建channel后，将selector(观察者)绑定到channel(被观察对象)，典型的观察者模式的应用，当
- * channel接受到事件发生时，channel通知selector，selector根据事件内容动作，反过来从selector中的key
- * 中可以获得封装后具体的channel，这个channel就是初始化新建的channel，从这个channel中就可以拿到相应
- * 的具体内容,所以说channel是和监听的端口绑定的，多个channel都可以注册到selector上，通过一个selector
- * 来进行转发，selector是进程隔离的。所以说init和listen并没有必然关系，可以初始化多个channel(端口
- * 不同) 绑定到同一个selector上进行统一处理，因为selector是单例的。
+ * 服务端创建ServerSocketChannel之后并将首个channel绑定到Selector,并为该通道注册OP_ACCEPT事件,这个channel
+ * 只负责监听客户端链接请求,当Select#select进行阻塞时,会监听OP_ACCEPT事件,并为其分配一个新的channel注册到Selector
+ * 并为其注册OP_READ消息,通过这种方式,在下一次select的时候就会监听到当前信道的OP_READ消息,然后进行处理
  */
 public class NioService {
 
@@ -43,20 +40,25 @@ public class NioService {
                         System.out.println("服务端接收到ACCEPT消息");
                         // 这里获得的channel和init注册的channel相同
                         ServerSocketChannel ssc = (ServerSocketChannel) key.channel();
-                        // if (serverChannelInit == ssc)
-                        // System.out.println("新建的channel和初始化channel的值相同");
-                        // else
-                        // System.out.println("新建的channel和初始化channel的值bu相同");
+                        if (serverChannelInit == ssc)
+                            System.out.println("新建的channel和初始化channel的值相同");
+                        else
+                            System.out.println("新建的channel和初始化channel的值BU相同");
+                        //建立三次握手
                         SocketChannel sc = ssc.accept();
 
                         if (sc == null) {
                             continue;
                         }
+                        //设置信道非阻塞,设置监听OP_READ事件
                         sc.configureBlocking(false);
                         sc.register(selector, SelectionKey.OP_READ);
                     } else if (key.isWritable()) {
-
                         System.out.println("服务端接收WRITABLE到消息");
+                        SocketChannel channel = (SocketChannel) key.channel();
+                        ByteBuffer outBuffer = ByteBuffer.wrap("hi......".getBytes());
+                        channel.write(outBuffer);// 将消息回送给客户端
+                        channel.register(selector, SelectionKey.OP_READ);
 
                     } else if (key.isReadable()) {
                         System.out.println("服务端接收到READABLE消息");
@@ -67,6 +69,7 @@ public class NioService {
             }
         }
     }
+
     public void read(SelectionKey key) throws IOException, InterruptedException {
         // 服务器可读取消息:得到事件发生的Socket通道
         SocketChannel channel = (SocketChannel) key.channel();
@@ -77,11 +80,9 @@ public class NioService {
         String msg = new String(data).trim();
         System.out.println("服务端收到信息：" + msg);
 
-        // 请求等待三秒，模仿数据请求操作
-        // wait(3000);
-
         ByteBuffer outBuffer = ByteBuffer.wrap(msg.getBytes());
         channel.write(outBuffer);// 将消息回送给客户端
+        channel.register(selector, SelectionKey.OP_WRITE);
     }
 
     /*
@@ -91,7 +92,7 @@ public class NioService {
      * 会一直监听事件的到来，并一直阻塞，客户端在时间发起后可以 立即返回，时间送到消息队列中进行处理，所以nio是基于消息传输的一种通信方式
      */
     public void initServer(int port) throws IOException {
-        // 获得一个serverSocket channel
+        // 创建第一个serverSocket channel,这个channel只负责用户链接请求
         ServerSocketChannel serverChannel = ServerSocketChannel.open();
         // 设置通道为非阻塞
         serverChannel.configureBlocking(false);
@@ -103,7 +104,6 @@ public class NioService {
         // 当时间到达时，selector.select()函数会返回,如果事件没有到达selector.select()
         // 会一直阻塞，直到有新的线程去进行获取
         serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-
         serverChannelInit = serverChannel;
     }
 
