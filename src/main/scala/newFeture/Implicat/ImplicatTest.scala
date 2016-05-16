@@ -21,12 +21,9 @@ object ImplicatTest {
     //    implicit def A2B(a: classA) = new classB
     val a = new classA
     a.funcA
+    // Class A 没有B 方法,但是可以通过隐式转换转换为类B,然后进行处理
     a.funcB
 
-    List   a = new List("faf");
-
-    val bigOne = a.bigger(3, 4)
-    println("big one is " + bigOne)
   }
 
 }
